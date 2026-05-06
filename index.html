@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Commission Automation Tool — RP Tech Services</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- GitHub Pages hosted version: allows embedding in SharePoint via iframe -->
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f5f5f3;
+    --bg-tertiary: #eeede9;
+    --text: #1a1a18;
+    --text-secondary: #6b6b67;
+    --text-tertiary: #9a9a96;
+    --border: rgba(0,0,0,0.12);
+    --border-med: rgba(0,0,0,0.2);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --blue-bg: #E6F1FB;
+    --blue-text: #185FA5;
+    --green-bg: #EAF3DE;
+    --green-text: #3B6D11;
+    --amber-bg: #FAEEDA;
+    --amber-text: #854F0B;
+    --red-bg: #FCEBEB;
+    --red-text: #A32D2D;
+    --accent: #1a1a18;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg-secondary: #262624;
+      --bg-tertiary: #2e2e2b;
+      --text: #f0efeb;
+      --text-secondary: #a0a09a;
+      --text-tertiary: #6b6b67;
+      --border: rgba(255,255,255,0.1);
+      --border-med: rgba(255,255,255,0.18);
+      --blue-bg: #0c3a5e;
+      --blue-text: #85B7EB;
+      --green-bg: #1a3308;
+      --green-text: #97C459;
+      --amber-bg: #3a2200;
+      --amber-text: #FAC775;
+      --red-bg: #3a0f0f;
+      --red-text: #F09595;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  header {
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    padding: 0 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+  }
+
+  .logo {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--text);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-icon svg { color: var(--bg); }
+
+  .status-pill {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--green-bg);
+    color: var(--green-text);
+  }
+
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .page-title {
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .page-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 1.5rem;
+    background: var(--bg);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 0 1rem;
+    border: 0.5px solid var(--border);
+    border-bottom: none;
+  }
+
+  .tab {
+    padding: 14px 18px;
+    font-size: 13px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    font-family: inherit;
+    transition: color 0.15s;
+    white-space: nowrap;
+  }
+
+  .tab.active {
+    color: var(--text);
+    border-bottom-color: var(--text);
+    font-weight: 500;
+  }
+
+  .tab:hover:not(.active) { color: var(--text); }
+
+  .tab-body {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    padding: 1.5rem;
+  }
+
+  .card {
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    color: var(--text);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .form-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 4px; }
+
+  label.field-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  input, select {
+    padding: 8px 10px;
+    font-size: 13px;
+    border: 0.5px solid var(--border-med);
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--text);
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
+  }
+
+  input[readonly] { color: var(--text-secondary); cursor: default; }
+
+  .btn {
+    padding: 9px 18px;
+    border: 0.5px solid var(--border-med);
+    border-radius: var(--radius-md);
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+
+  .btn:hover { background: var(--bg-secondary); }
+
+  .btn-primary {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+  }
+
+  .btn-primary:hover { opacity: 0.85; background: var(--text); }
+
+  .btn-sm {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+
+  .btn-danger {
+    border-color: var(--red-text);
+    color: var(--red-text);
+  }
+
+  .btn-danger:hover { background: var(--red-bg); }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .badge-blue { background: var(--blue-bg); color: var(--blue-text); }
+  .badge-green { background: var(--green-bg); color: var(--green-text); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber-text); }
+  .badge-red { background: var(--red-bg); color: var(--red-text); }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin: 1rem 0;
+  }
+
+  .metric {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px;
+  }
+
+  .metric-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+  .metric-value { font-size: 20px; font-weight: 500; }
+
+  .member-header {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 0.8fr 0.8fr 32px;
+    gap: 8px;
+    padding: 0 4px 6px;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 8px;
+  }
+
+  .member-header span {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .member-row {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 0.8fr 0.8fr 32px;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .comm-display {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 8px 6px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .remove-btn {
+    width: 28px;
+    height: 28px;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .remove-btn:hover { border-color: var(--red-text); color: var(--red-text); background: var(--red-bg); }
+
+  .alert {
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .alert-green { background: var(--green-bg); color: var(--green-text); border: 0.5px solid currentColor; }
+  .alert-amber { background: var(--amber-bg); color: var(--amber-text); border: 0.5px solid currentColor; }
+  .alert-red { background: var(--red-bg); color: var(--red-text); border: 0.5px solid currentColor; }
+  .alert-blue { background: var(--blue-bg); color: var(--blue-text); border: 0.5px solid currentColor; }
+
+  .rule-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .rule-item:last-child { border-bottom: none; }
+
+  .rule-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .rule-ok { background: #639922; }
+  .rule-fail { background: #E24B4A; }
+
+  .rule-label { flex: 1; font-size: 13px; }
+  .rule-note { font-size: 11px; color: var(--text-secondary); max-width: 280px; text-align: right; }
+
+  table.output-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .output-table th {
+    background: var(--bg-secondary);
+    padding: 7px 10px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 0.5px solid var(--border-med);
+    white-space: nowrap;
+  }
+
+  .output-table td {
+    padding: 8px 10px;
+    border-bottom: 0.5px solid var(--border);
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .output-table tr:last-child td { border-bottom: none; }
+  .output-table tr:hover td { background: var(--bg-secondary); }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+
+  .toggle-label input[type=checkbox] { width: auto; cursor: pointer; accent-color: var(--text); }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 1rem;
+    flex-wrap: wrap;
+  }
+
+  hr.divider {
+    border: none;
+    border-top: 0.5px solid var(--border);
+    margin: 1rem 0;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 13px;
+  }
+
+  .info-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .info-row strong { color: var(--text); font-weight: 500; }
+
+  .scroll-x { overflow-x: auto; }
+
+  @media (max-width: 600px) {
+    main { padding: 1rem; }
+    .form-row, .form-row-3 { grid-template-columns: 1fr; }
+    .member-header, .member-row { grid-template-columns: 1.5fr 1fr 0.6fr 0.6fr 28px; }
+    .tabs { padding: 0 0.5rem; }
+    .tab { padding: 12px 10px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="2" width="5" height="5" rx="1" fill="currentColor"/>
+          <rect x="9" y="2" width="5" height="5" rx="1" fill="currentColor"/>
+          <rect x="2" y="9" width="5" height="5" rx="1" fill="currentColor"/>
+          <rect x="9" y="9" width="5" height="5" rx="1" fill="currentColor" opacity="0.4"/>
+        </svg>
+      </div>
+      Commission Automation
+    </div>
+    <span class="status-pill" id="status-pill">Ready</span>
+  </div>
+</header>
+
+<main>
+  <p class="page-title">Commission workflow tool</p>
+  <p class="page-sub">Automated splits, date logic, rules validation, and setup table generation</p>
+
+  <div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('intake')">1 · Intake</button>
+      <button class="tab" onclick="switchTab('team')">2 · Team splits</button>
+      <button class="tab" onclick="switchTab('rules')">3 · Rules check</button>
+      <button class="tab" onclick="switchTab('output')">4 · Output</button>
+    </div>
+
+    <div class="tab-body">
+
+      <!-- TAB 1: INTAKE -->
+      <div id="tab-intake">
+        <div class="card">
+          <p class="card-title">Opportunity lookup</p>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label">Quote number</label>
+              <input type="text" id="quote-num" placeholder="e.g. Q-2024-4821" oninput="onQuoteChange()" />
+            </div>
+            <div class="field">
+              <label class="field-label">ConnectWise Opportunity ID</label>
+              <input type="text" id="opp-id" placeholder="Auto-filled or enter manually" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label">Caller</label>
+              <input type="text" id="caller" placeholder="Team member name" oninput="computeAll()" />
+            </div>
+            <div class="field">
+              <label class="field-label">Closer</label>
+              <input type="text" id="closer" placeholder="Same as caller if blank" oninput="computeAll()" />
+            </div>
+          </div>
+          <div class="alert alert-blue" style="font-size:12px">
+            ConnectWise REST API integration point: quote number → <code>GET /sales/opportunities?conditions=name contains "{last4}"</code> → store OpportunityID automatically.
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="card-title">Commission details</p>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label">Commission type</label>
+              <select id="comm-type" onchange="onTypeChange()">
+                <option value="recurring">Recurring</option>
+                <option value="onetime">One-time</option>
+                <option value="overage">Client signed overage</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label">Region</label>
+              <select id="region" onchange="computeAll()">
+                <option value="NJ">NJ only</option>
+                <option value="FL">FL only</option>
+                <option value="mixed">Mixed NJ + FL</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label">Start date <span id="start-date-hint" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--text-secondary)"></span></label>
+              <input type="date" id="start-date" onchange="computeDates()" />
+            </div>
+            <div class="field" id="end-date-field">
+              <label class="field-label">End date <span style="text-transform:none;letter-spacing:0;font-weight:400">(auto-calculated)</span></label>
+              <input type="date" id="end-date" readonly />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label">Deal value ($)</label>
+              <input type="number" id="deal-value" placeholder="0.00" min="0" step="0.01" oninput="computeAll()" />
+            </div>
+            <div class="field">
+              <label class="field-label">Tech involvement</label>
+              <select id="tech-share" onchange="computeAll()">
+                <option value="no">No tech involvement</option>
+                <option value="yes">Yes — policy dictates share</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" onclick="switchTab('team')">Next: team splits →</button>
+        </div>
+      </div>
+
+      <!-- TAB 2: TEAM SPLITS -->
+      <div id="tab-team" style="display:none">
+        <div class="card">
+          <p class="card-title">Team members &amp; commission splits</p>
+          <label class="toggle-label">
+            <input type="checkbox" id="van-krupal" onchange="onVanKrupal()" />
+            Van / Krupal sole sale — 100% split, no CSD share (for sole sales only)
+          </label>
+
+          <div id="members-container">
+            <div class="member-header">
+              <span>Name</span>
+              <span>Role</span>
+              <span>Split %</span>
+              <span>Comm %</span>
+              <span></span>
+            </div>
+            <div id="members-list"></div>
+          </div>
+
+          <button class="btn btn-sm" onclick="addMember()" style="margin-top:8px">+ Add member</button>
+
+          <hr class="divider">
+          <div class="metric-grid">
+            <div class="metric">
+              <p class="metric-label">Total split</p>
+              <p class="metric-value" id="total-split-disp">0%</p>
+            </div>
+            <div class="metric">
+              <p class="metric-label">Team % cap</p>
+              <p class="metric-value">≤ 12%</p>
+            </div>
+            <div class="metric">
+              <p class="metric-label">Type</p>
+              <p class="metric-value" id="type-disp">—</p>
+            </div>
+            <div class="metric">
+              <p class="metric-label">Base rate</p>
+              <p class="metric-value">8%</p>
+            </div>
+          </div>
+          <div id="split-alert"></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" onclick="switchTab('intake')">← Back</button>
+          <button class="btn btn-primary" onclick="switchTab('rules')">Next: rules check →</button>
+        </div>
+      </div>
+
+      <!-- TAB 3: RULES -->
+      <div id="tab-rules" style="display:none">
+        <div class="card">
+          <p class="card-title">Automated rules validation</p>
+          <div id="rules-list"></div>
+        </div>
+        <div id="rules-summary" style="margin-bottom:1rem"></div>
+        <div class="actions">
+          <button class="btn" onclick="switchTab('team')">← Back</button>
+          <button class="btn btn-primary" onclick="switchTab('output');generateOutput()">Generate output →</button>
+        </div>
+      </div>
+
+      <!-- TAB 4: OUTPUT -->
+      <div id="tab-output" style="display:none">
+        <div id="output-alerts"></div>
+
+        <div class="card">
+          <p class="card-title">Commission setup table</p>
+          <div class="scroll-x">
+            <table class="output-table">
+              <thead><tr id="output-headers"></tr></thead>
+              <tbody id="output-rows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" id="date-card">
+          <p class="card-title">Date logic &amp; summary</p>
+          <div id="date-summary"></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" onclick="switchTab('rules')">← Back</button>
+          <button class="btn btn-primary" onclick="copyTable()">Copy table as TSV</button>
+          <button class="btn" onclick="exportCSV()">Download CSV</button>
+          <button class="btn" onclick="printPage()">Print / Save PDF</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script>
+let members = [];
+let memberIdCounter = 0;
+
+function switchTab(name) {
+  ['intake','team','rules','output'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t === name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    const names = ['intake','team','rules','output'];
+    el.classList.toggle('active', names[i] === name);
+  });
+  if (name === 'rules') runRules();
+  if (name === 'team') { renderMembers(); updateTypeDisplay(); }
+}
+
+function onQuoteChange() {
+  const q = document.getElementById('quote-num').value.trim();
+  if (q.length >= 4) {
+    const last4 = q.slice(-4);
+    document.getElementById('opp-id').placeholder = 'CW lookup: ...'+last4+' (enter manually or connect API)';
+  }
+}
+
+function onTypeChange() {
+  computeDates();
+  updateTypeDisplay();
+  const type = document.getElementById('comm-type').value;
+  document.getElementById('end-date-field').style.opacity = type === 'onetime' ? '0.5' : '1';
+  // Update start date hint based on type
+  const hints = {
+    recurring: '(addition start date)',
+    onetime:   '(sale / service date)',
+    overage:   '(enter agreement start → auto-sets to 1st of next month)'
+  };
+  document.getElementById('start-date-hint').textContent = hints[type] || '';
+  renderMembers();
+}
+
+function updateTypeDisplay() {
+  const type = document.getElementById('comm-type').value;
+  const map = { recurring: 'Recurring', onetime: 'One-time', overage: 'Overage' };
+  document.getElementById('type-disp').textContent = map[type] || '—';
+}
+
+function computeDates() {
+  const type = document.getElementById('comm-type').value;
+  const startVal = document.getElementById('start-date').value;
+  if (!startVal) return;
+  const p = startVal.split('-');
+  const start = new Date(+p[0], +p[1]-1, +p[2]);
+
+  function fmtDate(d) {
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  let end = '';
+  if (type === 'recurring') {
+    // Recurring: Start is entered directly (1st of month).
+    // End = one day before the same date one year later.
+    // e.g. Start 9/1/2026 -> End 8/31/2027
+    const endD = new Date(start.getFullYear()+1, start.getMonth(), start.getDate());
+    endD.setDate(endD.getDate() - 1);
+    end = fmtDate(endD);
+
+  } else if (type === 'overage') {
+    // Overage: User enters agreement start (any day of month).
+    // Commission start = 1st of the FOLLOWING month.
+    // End = one day before that same date one year later.
+    // e.g. Agreement 9/15/2026 -> Comm start 10/1/2026 -> End 9/30/2027
+    const commStart = new Date(start.getFullYear(), start.getMonth()+1, 1);
+    const commEnd = new Date(commStart.getFullYear()+1, commStart.getMonth(), commStart.getDate());
+    commEnd.setDate(commEnd.getDate() - 1);
+    document.getElementById('start-date').value = fmtDate(commStart);
+    end = fmtDate(commEnd);
+  }
+
+  document.getElementById('end-date').value = end;
+  computeAll();
+}
+
+function addMember() {
+  const id = ++memberIdCounter;
+  members.push({ id, name: '', role: 'CSD', split: 0 });
+  renderMembers();
+}
+
+function removeMember(id) {
+  members = members.filter(m => m.id !== id);
+  renderMembers();
+}
+
+function updateMember(id, field, val) {
+  const m = members.find(m => m.id === id);
+  if (m) {
+    m[field] = field === 'split' ? (parseFloat(val) || 0) : val;
+    renderMembers();
+  }
+}
+
+function renderMembers() {
+  const container = document.getElementById('members-list');
+  const splitAlert = document.getElementById('split-alert');
+  const isVK = document.getElementById('van-krupal').checked;
+  const type = document.getElementById('comm-type').value;
+
+  if (isVK) {
+    container.innerHTML = '<div class="alert alert-green" style="margin:0">Van / Krupal sole sale active — 100%, no CSD share required.</div>';
+    document.getElementById('total-split-disp').textContent = '100%';
+    document.getElementById('total-split-disp').style.color = '';
+    splitAlert.innerHTML = '';
+    return;
+  }
+
+  if (members.length === 0) {
+    container.innerHTML = '<div class="empty-state">No team members added.<br>Click "+ Add member" to start.</div>';
+    document.getElementById('total-split-disp').textContent = '0%';
+    splitAlert.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = members.map(m => {
+    // No Comm role (Van/Krupal/Kevin M when part of split but not earning commission):
+    // shows split% for tracking but comm% = 0% and comm$ = $0.00
+    const commPct = m.role === 'No Comm' ? '0.00%' : (m.split * 0.08).toFixed(2) + '%';
+    return `<div class="member-row">
+      <input type="text" value="${escHtml(m.name)}" placeholder="Full name"
+        onchange="updateMember(${m.id},'name',this.value)" style="font-size:13px" />
+      <select onchange="updateMember(${m.id},'role',this.value)" style="font-size:13px">
+        ${['Caller','Closer','CSD','Tech','No Comm'].map(r => `<option value="${r}" ${m.role===r?'selected':''}>${r}</option>`).join('')}
+      </select>
+      <input type="number" value="${m.split}" min="0" max="100" step="0.1"
+        onchange="updateMember(${m.id},'split',this.value)" style="font-size:13px" />
+      <span class="comm-display">${commPct}</span>
+      <button class="remove-btn" onclick="removeMember(${m.id})" title="Remove">×</button>
+    </div>`;
+  }).join('');
+
+  const total = members.reduce((s, m) => s + m.split, 0);
+  const totalEl = document.getElementById('total-split-disp');
+  totalEl.textContent = total.toFixed(1) + '%';
+
+  const diff = Math.abs(total - 100);
+  if (diff < 0.5) {
+    totalEl.style.color = 'var(--green-text)';
+    splitAlert.innerHTML = '';
+  } else if (total > 100) {
+    totalEl.style.color = 'var(--red-text)';
+    splitAlert.innerHTML = '<div class="alert alert-red">Total exceeds 100% — adjust splits before continuing.</div>';
+  } else {
+    totalEl.style.color = 'var(--amber-text)';
+    splitAlert.innerHTML = '<div class="alert alert-amber">Total is ' + total.toFixed(1) + '% — splits must sum to 100%.</div>';
+  }
+}
+
+function onVanKrupal() {
+  renderMembers();
+  runRules();
+}
+
+function computeAll() {
+  renderMembers();
+}
+
+function runRules() {
+  const isVK = document.getElementById('van-krupal').checked;
+  const region = document.getElementById('region').value;
+  const tech = document.getElementById('tech-share').value;
+  const type = document.getElementById('comm-type').value;
+  const total = members.reduce((s, m) => s + m.split, 0);
+  const techMembers = members.filter(m => m.role === 'Tech');
+  const csdMembers = members.filter(m => ['CSD','Caller','Closer'].includes(m.role));
+  // Fix: CSD cap should only count members with role 'CSD', not Caller/Closer
+  const csdOnlyPct = members.filter(m => m.role === 'CSD').reduce((s, m) => s + m.split, 0);
+  // No Comm members are excluded from all commission calculations
+  const teamPct = csdMembers.reduce((s, m) => s + m.split, 0);
+  const singleAt100 = members.length === 1 && members[0].split === 100;
+
+  const rules = [
+    {
+      label: 'Quote number entered',
+      ok: !!document.getElementById('quote-num').value.trim(),
+      note: 'Required for ConnectWise opportunity lookup'
+    },
+    {
+      label: 'Caller identified',
+      ok: !!(document.getElementById('caller').value.trim() || isVK),
+      note: 'Caller must be identified from Teams or entered manually'
+    },
+    {
+      label: 'Start date set',
+      ok: !!document.getElementById('start-date').value,
+      note: 'Required for all commission types'
+    },
+    {
+      label: 'End date calculated',
+      ok: type === 'onetime' || !!document.getElementById('end-date').value,
+      note: 'Auto-calculated for recurring and overage types'
+    },
+    {
+      label: 'Van / Krupal: sole sale = 100%, no CSD',
+      ok: !isVK || members.length === 0,
+      note: 'When Van/Krupal sole sale is active, remove all other members'
+    },
+    {
+      label: 'Single-person 100% — recalculate required',
+      ok: isVK || !singleAt100,
+      note: 'One person at 100% (non-Van/Krupal) triggers mandatory recalculation'
+    },
+    {
+      label: 'Team splits sum to 100%',
+      ok: isVK || members.length === 0 || Math.abs(total - 100) < 0.5,
+      note: 'All member splits must add up to exactly 100%'
+    },
+    {
+      label: 'CSD team commission ≤ 12% cap',
+      ok: isVK || csdOnlyPct <= 12,
+      note: 'CSD members\' combined split should not exceed the ~12% policy cap (Caller/Closer excluded)'
+    },
+    {
+      label: 'Tech share only when policy dictates',
+      ok: tech === 'yes' || techMembers.length === 0,
+      note: 'Tech members should only be added when policy explicitly allows a share'
+    },
+    {
+      label: 'Mixed NJ/FL — both regions represented',
+      ok: region !== 'mixed' || csdMembers.length >= 2,
+      note: 'Mixed region requires both NJ and FL CSD members to be present'
+    },
+    {
+      label: 'No unnamed team members',
+      ok: isVK || members.every(m => m.name.trim() !== ''),
+      note: 'All team members must have names entered'
+    },
+  ];
+
+  const listEl = document.getElementById('rules-list');
+  listEl.innerHTML = rules.map(r => `
+    <div class="rule-item">
+      <div class="rule-dot ${r.ok ? 'rule-ok' : 'rule-fail'}"></div>
+      <span class="rule-label">${r.label}</span>
+      <span class="rule-note">${r.note}</span>
+    </div>
+  `).join('');
+
+  const fails = rules.filter(r => !r.ok).length;
+  const summaryEl = document.getElementById('rules-summary');
+  if (fails === 0) {
+    summaryEl.innerHTML = '<div class="alert alert-green">All ' + rules.length + ' rules passed — ready to generate output.</div>';
+    document.getElementById('status-pill').textContent = 'Valid';
+    document.getElementById('status-pill').style.background = 'var(--green-bg)';
+    document.getElementById('status-pill').style.color = 'var(--green-text)';
+  } else {
+    summaryEl.innerHTML = '<div class="alert alert-amber">' + fails + ' rule' + (fails > 1 ? 's' : '') + ' need attention before finalizing.</div>';
+    document.getElementById('status-pill').textContent = fails + ' issue' + (fails > 1 ? 's' : '');
+    document.getElementById('status-pill').style.background = 'var(--amber-bg)';
+    document.getElementById('status-pill').style.color = 'var(--amber-text)';
+  }
+}
+
+function generateOutput() {
+  const type = document.getElementById('comm-type').value;
+  const isVK = document.getElementById('van-krupal').checked;
+  const quote = document.getElementById('quote-num').value.trim() || '—';
+  const oppId = document.getElementById('opp-id').value.trim() || '—';
+  const caller = document.getElementById('caller').value.trim() || '—';
+  const closer = document.getElementById('closer').value.trim() || caller;
+  const startDate = document.getElementById('start-date').value || '—';
+  const endDate = document.getElementById('end-date').value || (type === 'onetime' ? 'N/A' : '—');
+  const dealVal = parseFloat(document.getElementById('deal-value').value) || 0;
+  const region = document.getElementById('region').value;
+  const typeLabel = { recurring: 'Recurring', onetime: 'One-time', overage: 'Overage' }[type];
+
+  const headers = ['Quote #','Opp ID','Member','Role','Region','Split %','Comm %','Comm $','Start','End','Type'];
+  document.getElementById('output-headers').innerHTML = headers.map(h => `<th>${h}</th>`).join('');
+
+  let rows = [];
+  if (isVK) {
+    rows = [{ name: 'Van/Krupal', role: 'Sole Sale', region, split: 100, commPct: 8, commDol: (dealVal * 0.08).toFixed(2) }];
+  } else {
+    rows = members.map(m => {
+      // No Comm role: included in split% for policy tracking but earns $0 commission
+      // (applies to Van, Krupal, Kevin M when part of a deal but not receiving payout)
+      const isNoComm = m.role === 'No Comm';
+      const commPct = isNoComm ? 0 : parseFloat((m.split * 0.08).toFixed(4));
+      const commDol = isNoComm ? '0.00' : (dealVal * m.split / 100 * 0.08).toFixed(2);
+      return { name: m.name || '(unnamed)', role: m.role, region, split: m.split, commPct, commDol, isNoComm };
+    });
+  }
+
+  const typeBadge = {
+    recurring: 'badge-green',
+    onetime: 'badge-blue',
+    overage: 'badge-amber'
+  }[type];
+
+  document.getElementById('output-rows').innerHTML = rows.length === 0
+    ? '<tr><td colspan="11" style="text-align:center;color:var(--text-tertiary);padding:2rem">No members — add team members in the Team splits tab.</td></tr>'
+    : rows.map(r => `<tr style="${r.isNoComm ? 'opacity:0.65' : ''}">
+        <td>${escHtml(quote)}</td>
+        <td>${escHtml(oppId)}</td>
+        <td><strong>${escHtml(r.name)}</strong>${r.isNoComm ? ' <span style="font-size:10px;color:var(--amber-text);font-weight:500">NO COMM</span>' : ''}</td>
+        <td><span class="badge ${r.isNoComm ? 'badge-amber' : 'badge-blue'}">${r.role}</span></td>
+        <td>${r.region}</td>
+        <td>${r.split}%</td>
+        <td>${r.isNoComm ? '—' : r.commPct + '%'}</td>
+        <td>${r.isNoComm ? '$0.00' : '$' + r.commDol}</td>
+        <td>${startDate}</td>
+        <td>${endDate}</td>
+        <td><span class="badge ${typeBadge}">${typeLabel}</span></td>
+      </tr>`).join('');
+
+  let dateNote = '';
+  if (type === 'recurring') {
+    dateNote = `<strong>Recurring:</strong> Start = ${startDate}. End = day before same date next year (${endDate}).`;
+  } else if (type === 'overage') {
+    dateNote = `<strong>Client signed overage:</strong> Commission start = 1st of following month (${startDate}). End = day before same date next year (${endDate}).`;
+  } else {
+    dateNote = `<strong>One-time:</strong> No end date. Start = ${startDate}.`;
+  }
+
+  document.getElementById('date-summary').innerHTML = `
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">${dateNote}</p>
+    <div class="info-row" style="margin-top:8px">
+      <span>Caller: <strong>${escHtml(caller)}</strong></span>
+      <span>Closer: <strong>${escHtml(closer)}</strong></span>
+      <span>Region: <strong>${region}</strong></span>
+      <span>Deal: <strong>$${dealVal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></span>
+    </div>
+  `;
+
+  document.getElementById('output-alerts').innerHTML = '';
+  const fails = document.querySelectorAll('.rule-fail').length;
+  if (fails > 0) {
+    document.getElementById('output-alerts').innerHTML =
+      '<div class="alert alert-amber" style="margin-bottom:12px">' + fails + ' rule' + (fails>1?'s':'')+' failed validation — review the Rules check tab before finalizing.</div>';
+  }
+
+  window._tableData = { headers, rows: rows.map(r => [quote, oppId, r.name, r.role, region, r.split+'%', r.commPct+'%', '$'+r.commDol, startDate, endDate, typeLabel]) };
+}
+
+function copyTable() {
+  if (!window._tableData) return;
+  const text = [window._tableData.headers, ...window._tableData.rows].map(r => r.join('\t')).join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1800);
+  });
+}
+
+function exportCSV() {
+  if (!window._tableData) return;
+  const csv = [window._tableData.headers, ...window._tableData.rows]
+    .map(r => r.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(','))
+    .join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'commission-setup-' + (document.getElementById('quote-num').value || 'export') + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function printPage() {
+  window.print();
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Init
+(function init() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('start-date').value = today;
+  addMember();
+  addMember();
+  members[0].role = 'Caller'; members[0].split = 92;
+  members[1].role = 'CSD';    members[1].split = 8;
+  onTypeChange();
+  renderMembers();
+})();
+</script>
+
+</body>
+</html>
