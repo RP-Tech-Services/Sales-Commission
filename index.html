@@ -580,46 +580,57 @@
 
       <!-- TAB 2: TEAM SPLITS -->
       <div id="tab-team" style="display:none">
-        <div class="card">
-          <p class="card-title">Team members &amp; commission splits</p>
-          <label class="toggle-label">
-            <input type="checkbox" id="van-krupal" onchange="onVanKrupal()" />
-            Van / Krupal sole sale — 100% split, no CSD share (for sole sales only)
-          </label>
 
-          <div id="members-container">
-            <div class="member-header">
-              <span>Name</span>
-              <span>Role</span>
-              <span>Split %</span>
-              <span>Comm %</span>
-              <span></span>
+        <!-- STEP 1: SCENARIO SELECTOR -->
+        <div class="card">
+          <p class="card-title">Step 1 — Select the deal scenario</p>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">
+            The tool auto-assigns CW entry percentages from the policy table. Percentages are exact (12% Caller, 38% each Closer slot, 12%÷n CSD Team).
+          </p>
+          <div id="scenario-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"></div>
+          <div id="scenario-desc" style="font-size:12px;color:var(--text-secondary);min-height:18px"></div>
+        </div>
+
+        <!-- STEP 2: CSD COUNT + NAMES -->
+        <div class="card" id="name-entry-card">
+          <p class="card-title">Step 2 — CSD team members &amp; sales roles</p>
+
+          <!-- CSD COUNT -->
+          <div style="margin-bottom:16px;padding-bottom:14px;border-bottom:.5px solid var(--border)">
+            <label style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);display:block;margin-bottom:6px">
+              How many CSD team members are sharing the 12%?
+            </label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <div id="csd-count-btns" style="display:flex;gap:6px"></div>
+              <span id="team-pct-preview" style="font-size:12px;color:var(--text-secondary)"></span>
             </div>
-            <div id="members-list"></div>
           </div>
 
-          <button class="btn btn-sm" onclick="addMember()" style="margin-top:8px">+ Add member</button>
+          <!-- DYNAMIC NAME FIELDS -->
+          <div id="name-entry-fields"></div>
+          <div id="split-alert" style="margin-top:8px"></div>
+        </div>
 
+        <!-- SUMMARY TABLE -->
+        <div class="card" id="split-summary-card" style="display:none">
+          <p class="card-title">CW opportunity team entry — review before proceeding</p>
+          <div class="member-header">
+            <span>Name</span>
+            <span>Role</span>
+            <span>Sales %</span>
+            <span>Team %</span>
+            <span>CW Entry %</span>
+            <span>Setup Table %</span>
+          </div>
+          <div id="members-list"></div>
           <hr class="divider">
           <div class="metric-grid">
-            <div class="metric">
-              <p class="metric-label">Total split</p>
-              <p class="metric-value" id="total-split-disp">0%</p>
-            </div>
-            <div class="metric">
-              <p class="metric-label">Team % cap</p>
-              <p class="metric-value">≤ 12%</p>
-            </div>
-            <div class="metric">
-              <p class="metric-label">Type</p>
-              <p class="metric-value" id="type-disp">—</p>
-            </div>
-            <div class="metric">
-              <p class="metric-label">Base rate</p>
-              <p class="metric-value">8%</p>
-            </div>
+            <div class="metric"><p class="metric-label">Total CW %</p><p class="metric-value" id="total-split-disp">—</p></div>
+            <div class="metric"><p class="metric-label">CSD per member</p><p class="metric-value" id="team-pct-disp">—</p></div>
+            <div class="metric"><p class="metric-label">Type</p><p class="metric-value" id="type-disp">—</p></div>
+            <div class="metric"><p class="metric-label">Scenario</p><p class="metric-value" id="scenario-disp" style="font-size:12px">—</p></div>
           </div>
-          <div id="split-alert"></div>
+          <div id="csd-explanation" style="font-size:12px;color:var(--text-secondary);margin-top:10px;padding:10px;background:var(--bg-secondary);border-radius:8px"></div>
         </div>
 
         <div class="actions">
@@ -673,7 +684,146 @@
 </main>
 
 <script>
-let members = [];
+// ─── POLICY TABLE (from Commissions.xlsx — Sheet1 + Sample computations) ──
+// KEY INSIGHT from spreadsheet:
+//   • Caller base = 12%, Closer 50% = 38%, Team share = 12% ÷ numCSD
+//   • A person can hold BOTH a sales role AND team role → their % is the sum
+//   • Non-CSD Callers/Closers do NOT get CSD team share
+//   • CSD members who are also Caller/Closer get: sales role % + their team share
+//   • CW Entry % = what goes into Opportunity > Team Tab (multiplied by 8% for Setup Tables)
+
+// Scenario templates — CSD count is dynamic, set by numCSD selector
+const SCENARIO_TEMPLATES = [
+  {
+    id: 'caller_only',
+    label: 'Caller Only',
+    desc: 'One caller, no closer. CSD team shares 12% equally.',
+    salesSlots: [
+      { key: 'caller', label: 'Caller', basePct: 12, role: 'Caller' }
+    ]
+  },
+  {
+    id: 'caller_50closer',
+    label: 'Caller + 50% Closer',
+    desc: 'Caller + one closer at 50%. CSD team shares 12% equally.',
+    salesSlots: [
+      { key: 'caller',   label: 'Caller',        basePct: 12, role: 'Caller' },
+      { key: 'closer1',  label: 'Closer (50%)',   basePct: 38, role: 'Closer' }
+    ]
+  },
+  {
+    id: 'closer_50only',
+    label: '50% Closer Only',
+    desc: 'No caller — one closer at 50% involvement.',
+    salesSlots: [
+      { key: 'closer1',  label: 'Closer (50%)',   basePct: 38, role: 'Closer' }
+    ]
+  },
+  {
+    id: 'closer_100only',
+    label: '100% Closer Only',
+    desc: 'No caller — closer fills both 50% slots (full close).',
+    salesSlots: [
+      { key: 'closer1',  label: 'Closer 50% slot 1', basePct: 38, role: 'Closer' },
+      { key: 'closer2',  label: 'Closer 50% slot 2', basePct: 38, role: 'Closer' }
+    ]
+  },
+  {
+    id: 'caller_100closer',
+    label: 'Caller + 100% Closer',
+    desc: 'Caller + closer fills both 50% slots.',
+    salesSlots: [
+      { key: 'caller',   label: 'Caller',            basePct: 12, role: 'Caller' },
+      { key: 'closer1',  label: 'Closer 50% slot 1', basePct: 38, role: 'Closer' },
+      { key: 'closer2',  label: 'Closer 50% slot 2', basePct: 38, role: 'Closer' }
+    ]
+  },
+  {
+    id: 'team_only',
+    label: 'Team Only',
+    desc: 'No sales role — CSD team share only. 12% ÷ number of CSD members.',
+    salesSlots: []
+  },
+  {
+    id: 'van_krupal',
+    label: 'Van / Krupal / Travis — No Commission',
+    desc: 'Named person is Caller/Closer. No commission paid.',
+    salesSlots: [
+      { key: 'nocomm', label: 'Van / Krupal / Travis', basePct: 0, role: 'No Comm' }
+    ]
+  }
+];
+
+// No-Comm names — auto-assigned when matched
+const NO_COMM_NAMES = ['van', 'krupal', 'travis', 'kevin m', 'kevin mcconnell'];
+
+// Dynamic CSD team % — 12% divided equally by numCSD
+function getTeamPct(numCSD) {
+  if (!numCSD || numCSD < 1) return 0;
+  return parseFloat((12 / numCSD).toFixed(4));
+}
+
+// Build the full member list from scenario template + CSD names + numCSD
+// Returns array of { name, role, cwPct, salesPct, teamPct, noComm }
+function buildMembersFromTemplate(template, csdNames, salesNames, numCSD) {
+  const teamPct = getTeamPct(numCSD);
+  const members = [];
+
+  if (template.id === 'van_krupal') {
+    const nm = salesNames['nocomm'] || '';
+    members.push({ id: ++memberIdCounter, name: nm, role: 'No Comm', cwPct: 0, salesPct: 0, teamPct: 0, noComm: true });
+    return members;
+  }
+
+  if (template.id === 'team_only') {
+    // Pure CSD team members only
+    for (let i = 0; i < numCSD; i++) {
+      const nm = csdNames[i] || '';
+      members.push({ id: ++memberIdCounter, name: nm, role: 'CSD', cwPct: teamPct, salesPct: 0, teamPct, noComm: false });
+    }
+    return members;
+  }
+
+  // Build a map: personKey -> { salesPct, role }
+  // A CSD member who is also Caller/Closer gets their salesPct + teamPct combined
+  const salesMap = {}; // personKey -> { basePct, role, name }
+  template.salesSlots.forEach(slot => {
+    const nm = (salesNames[slot.key] || '').trim();
+    if (!nm) return;
+    if (salesMap[nm.toLowerCase()]) {
+      // Same person in multiple slots (e.g. 100% closer = both slots)
+      salesMap[nm.toLowerCase()].basePct += slot.basePct;
+    } else {
+      salesMap[nm.toLowerCase()] = { basePct: slot.basePct, role: slot.role, name: nm };
+    }
+  });
+
+  // CSD members
+  const csdAdded = new Set();
+  for (let i = 0; i < numCSD; i++) {
+    const nm = (csdNames[i] || '').trim();
+    if (!nm) continue;
+    const nmLower = nm.toLowerCase();
+    csdAdded.add(nmLower);
+    const isSalesRole = salesMap[nmLower];
+    const salesPct = isSalesRole ? isSalesRole.basePct : 0;
+    const totalCW = salesPct + teamPct;
+    const role = isSalesRole ? isSalesRole.role : 'CSD';
+    members.push({ id: ++memberIdCounter, name: nm, role, cwPct: totalCW, salesPct, teamPct, noComm: false, isCSD: true });
+    if (isSalesRole) delete salesMap[nmLower]; // already handled
+  }
+
+  // Non-CSD sales roles (Caller/Closer who are NOT on the CSD team)
+  Object.values(salesMap).forEach(s => {
+    members.push({ id: ++memberIdCounter, name: s.name, role: s.role, cwPct: s.basePct, salesPct: s.basePct, teamPct: 0, noComm: false, isCSD: false });
+  });
+
+  return members;
+}
+
+let selectedScenario = null;   // current SCENARIOS entry
+let memberNames = {};          // slotIndex -> name string
+let members = [];              // final computed members array
 let memberIdCounter = 0;
 
 function switchTab(name) {
@@ -685,7 +835,7 @@ function switchTab(name) {
     el.classList.toggle('active', names[i] === name);
   });
   if (name === 'rules') runRules();
-  if (name === 'team') { renderMembers(); updateTypeDisplay(); }
+  if (name === 'team') { renderScenarioGrid(); renderCSDCountBtns(); renderNameFields(); renderSummaryTable(); updateTypeDisplay(); }
 }
 
 function onQuoteChange() {
@@ -753,91 +903,235 @@ function computeDates() {
   computeAll();
 }
 
-function addMember() {
-  const id = ++memberIdCounter;
-  members.push({ id, name: '', role: 'CSD', split: 0 });
-  renderMembers();
+// ─── SCENARIO ENGINE ────────────────────────────────────────────────────────
+let selectedTemplate = null;   // current SCENARIO_TEMPLATES entry
+let numCSD = 2;                // default 2 CSD members
+let salesNames = {};           // slot key -> name
+let csdNames   = [];           // index -> name
+
+function renderScenarioGrid() {
+  const grid = document.getElementById('scenario-grid');
+  if (!grid) return;
+  grid.innerHTML = SCENARIO_TEMPLATES.map(s => {
+    const active = selectedTemplate && selectedTemplate.id === s.id;
+    return `<button onclick="selectScenario('${s.id}')" style="
+      padding:10px 12px;border-radius:8px;border:.5px solid ${active ? 'var(--text)' : 'var(--border-med)'};
+      background:${active ? 'var(--text)' : 'var(--background-primary)'};
+      color:${active ? 'var(--background-primary)' : 'var(--text-primary)'};
+      font-size:12px;font-weight:${active ? '600' : '400'};font-family:inherit;
+      cursor:pointer;text-align:left;line-height:1.4;transition:all .15s">
+      <span style="font-weight:600;display:block;margin-bottom:2px">${s.label}</span>
+      <span style="opacity:.6;font-size:11px">${s.desc.split('.')[0]}</span>
+    </button>`;
+  }).join('');
 }
 
-function removeMember(id) {
-  members = members.filter(m => m.id !== id);
-  renderMembers();
+function renderCSDCountBtns() {
+  const cont = document.getElementById('csd-count-btns');
+  const prev = document.getElementById('team-pct-preview');
+  if (!cont) return;
+  const options = [1,2,3,4,5];
+  cont.innerHTML = options.map(n => {
+    const active = n === numCSD;
+    return `<button onclick="setCSDCount(${n})" style="
+      width:36px;height:36px;border-radius:8px;border:.5px solid ${active ? 'var(--text)' : 'var(--border-med)'};
+      background:${active ? 'var(--text)' : 'var(--background-primary)'};
+      color:${active ? 'var(--background-primary)' : 'var(--text-primary)'};
+      font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;transition:all .15s">${n}</button>`;
+  }).join('');
+  if (prev) prev.textContent = numCSD > 0 ? `→ each CSD member gets ${parseFloat((12/numCSD).toFixed(2))}%` : '';
 }
 
-function updateMember(id, field, val) {
-  const m = members.find(m => m.id === id);
-  if (m) {
-    m[field] = field === 'split' ? (parseFloat(val) || 0) : val;
-    renderMembers();
-  }
+function setCSDCount(n) {
+  numCSD = n;
+  csdNames = csdNames.slice(0, n);
+  renderCSDCountBtns();
+  renderNameFields();
+  rebuildAndRender();
 }
 
-function renderMembers() {
-  const container = document.getElementById('members-list');
-  const splitAlert = document.getElementById('split-alert');
-  const isVK = document.getElementById('van-krupal').checked;
-  const type = document.getElementById('comm-type').value;
+function selectScenario(id) {
+  selectedTemplate = SCENARIO_TEMPLATES.find(s => s.id === id);
+  salesNames = {};
+  renderScenarioGrid();
+  const descEl = document.getElementById('scenario-desc');
+  if (descEl) descEl.textContent = selectedTemplate ? selectedTemplate.desc : '';
+  const sdEl = document.getElementById('scenario-disp');
+  if (sdEl) sdEl.textContent = selectedTemplate ? selectedTemplate.label : '—';
+  renderNameFields();
+  rebuildAndRender();
+}
 
-  if (isVK) {
-    container.innerHTML = '<div class="alert alert-green" style="margin:0">Van / Krupal sole sale active — 100%, no CSD share required.</div>';
-    document.getElementById('total-split-disp').textContent = '100%';
-    document.getElementById('total-split-disp').style.color = '';
-    splitAlert.innerHTML = '';
+// ─── NAME ENTRY FIELDS ───────────────────────────────────────────────────────
+function renderNameFields() {
+  const card = document.getElementById('name-entry-card');
+  const container = document.getElementById('name-entry-fields');
+  if (!container) return;
+  renderCSDCountBtns();
+
+  if (!selectedTemplate) {
+    container.innerHTML = '<p style="font-size:13px;color:var(--text-secondary)">Select a scenario above first.</p>';
+    const sc = document.getElementById('split-summary-card');
+    if (sc) sc.style.display = 'none';
     return;
   }
 
-  if (members.length === 0) {
-    container.innerHTML = '<div class="empty-state">No team members added.<br>Click "+ Add member" to start.</div>';
-    document.getElementById('total-split-disp').textContent = '0%';
-    splitAlert.innerHTML = '';
+  let html = '';
+
+  // Van/Krupal/Travis — single no-comm field
+  if (selectedTemplate.id === 'van_krupal') {
+    html += `<div style="margin-bottom:10px">
+      <label style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);display:block;margin-bottom:4px">Van / Krupal / Travis name</label>
+      <input type="text" id="sf-nocomm" placeholder="Name" value="${escHtml(salesNames['nocomm']||'')}"
+        oninput="salesNames['nocomm']=this.value;rebuildAndRender()"
+        style="width:100%;padding:8px 10px;font-size:13px;border:.5px solid var(--border-med);border-radius:8px;background:var(--background-primary);color:var(--text-primary);font-family:inherit"/>
+    </div>
+    <div class="alert alert-green" style="font-size:12px">No commission is paid — this person is flagged as No Comm. CW entry % = 0.</div>`;
+    container.innerHTML = html;
+    const sc = document.getElementById('split-summary-card');
+    if (sc) sc.style.display = 'block';
+    return;
+  }
+
+  // Team Only — only CSD fields
+  if (selectedTemplate.id === 'team_only') {
+    html += `<p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px">Enter the names of the ${numCSD} CSD team member${numCSD>1?'s':''} sharing the 12%.</p>`;
+    for (let i = 0; i < numCSD; i++) {
+      const teamPct = parseFloat((12/numCSD).toFixed(2));
+      html += `<div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;margin-bottom:8px">
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--text-primary)">CSD Member ${i+1}</div>
+          <div style="font-size:11px;color:var(--text-secondary)">Team share: <strong>${teamPct}%</strong></div>
+        </div>
+        <input type="text" id="csd-${i}" placeholder="Full name" value="${escHtml(csdNames[i]||'')}"
+          oninput="csdNames[${i}]=this.value;rebuildAndRender()"
+          style="padding:8px 10px;font-size:13px;border:.5px solid var(--border-med);border-radius:8px;background:var(--background-primary);color:var(--text-primary);font-family:inherit;width:100%"/>
+      </div>`;
+    }
+    container.innerHTML = html;
+    const sc = document.getElementById('split-summary-card');
+    if (sc) sc.style.display = 'block';
+    return;
+  }
+
+  // Sales roles section
+  const teamPct = parseFloat((12/numCSD).toFixed(2));
+  html += `<div style="margin-bottom:14px">
+    <p style="font-size:12px;font-weight:500;color:var(--text-primary);margin-bottom:8px">Sales roles</p>
+    <p style="font-size:11px;color:var(--text-secondary);margin-bottom:8px">If a CSD member holds a sales role, enter their name here AND in the CSD section — the tool will combine their percentages automatically.</p>`;
+
+  selectedTemplate.salesSlots.forEach(slot => {
+    html += `<div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;margin-bottom:8px">
+      <div>
+        <div style="font-size:12px;font-weight:500;color:var(--text-primary)">${slot.label}</div>
+        <div style="font-size:11px;color:var(--text-secondary)">Base: <strong>${slot.basePct}%</strong></div>
+      </div>
+      <input type="text" id="sf-${slot.key}" placeholder="Full name" value="${escHtml(salesNames[slot.key]||'')}"
+        oninput="salesNames['${slot.key}']=this.value;rebuildAndRender()"
+        style="padding:8px 10px;font-size:13px;border:.5px solid var(--border-med);border-radius:8px;background:var(--background-primary);color:var(--text-primary);font-family:inherit;width:100%"/>
+    </div>`;
+  });
+  html += '</div>';
+
+  // CSD team section
+  html += `<div style="border-top:.5px solid var(--border);padding-top:14px">
+    <p style="font-size:12px;font-weight:500;color:var(--text-primary);margin-bottom:4px">CSD team members</p>
+    <p style="font-size:11px;color:var(--text-secondary);margin-bottom:8px">Each gets <strong>${teamPct}%</strong> team share. If they also hold a sales role above, their total CW % will include both.</p>`;
+
+  for (let i = 0; i < numCSD; i++) {
+    html += `<div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;margin-bottom:8px">
+      <div>
+        <div style="font-size:12px;font-weight:500;color:var(--text-primary)">CSD Member ${i+1}</div>
+        <div style="font-size:11px;color:var(--text-secondary)">Team share: <strong>${teamPct}%</strong></div>
+      </div>
+      <input type="text" id="csd-${i}" placeholder="Full name" value="${escHtml(csdNames[i]||'')}"
+        oninput="csdNames[${i}]=this.value;rebuildAndRender()"
+        style="padding:8px 10px;font-size:13px;border:.5px solid var(--border-med);border-radius:8px;background:var(--background-primary);color:var(--text-primary);font-family:inherit;width:100%"/>
+    </div>`;
+  }
+  html += '</div>';
+
+  container.innerHTML = html;
+  const sc = document.getElementById('split-summary-card');
+  if (sc) sc.style.display = 'block';
+}
+
+// ─── REBUILD MEMBERS + RENDER SUMMARY ────────────────────────────────────────
+function rebuildAndRender() {
+  if (!selectedTemplate) { members = []; renderSummaryTable(); return; }
+  members = buildMembersFromTemplate(selectedTemplate, csdNames, salesNames, numCSD);
+  renderSummaryTable();
+  runRules();
+}
+
+function renderSummaryTable() {
+  const container = document.getElementById('members-list');
+  const splitAlert = document.getElementById('split-alert');
+  if (!container) return;
+
+  if (!selectedTemplate || members.length === 0) {
+    container.innerHTML = '<div class="empty-state">Select a scenario and enter names above.</div>';
+    const td = document.getElementById('total-split-disp');
+    if (td) td.textContent = '—';
     return;
   }
 
   container.innerHTML = members.map(m => {
-    // No Comm role (Van/Krupal/Kevin M when part of split but not earning commission):
-    // shows split% for tracking but comm% = 0% and comm$ = $0.00
-    const commPct = m.role === 'No Comm' ? '0.00%' : (m.split * 0.08).toFixed(2) + '%';
-    return `<div class="member-row">
-      <input type="text" value="${escHtml(m.name)}" placeholder="Full name"
-        onchange="updateMember(${m.id},'name',this.value)" style="font-size:13px" />
-      <select onchange="updateMember(${m.id},'role',this.value)" style="font-size:13px">
-        ${['Caller','Closer','CSD','Tech','No Comm'].map(r => `<option value="${r}" ${m.role===r?'selected':''}>${r}</option>`).join('')}
-      </select>
-      <input type="number" value="${m.split}" min="0" max="100" step="0.1"
-        onchange="updateMember(${m.id},'split',this.value)" style="font-size:13px" />
-      <span class="comm-display">${commPct}</span>
-      <button class="remove-btn" onclick="removeMember(${m.id})" title="Remove">×</button>
+    const setupPct = m.noComm ? '—' : (m.cwPct * 0.08 * 100).toFixed(4) + '%';
+    const roleColor = m.noComm ? 'var(--amber-text)' : 'var(--blue-text)';
+    const roleBg   = m.noComm ? 'var(--amber-background)' : 'var(--blue-background)';
+    const salesStr  = m.salesPct > 0 ? m.salesPct.toFixed(2) + '%' : '—';
+    const teamStr   = m.teamPct  > 0 ? m.teamPct.toFixed(2)  + '%' : '—';
+    const cwStr     = m.noComm   ? '0%' : m.cwPct.toFixed(2) + '%';
+    return `<div class="member-row" style="grid-template-columns:2fr 1fr 0.7fr 0.7fr 0.9fr 0.9fr">
+      <span style="font-size:13px;font-weight:500;padding:8px 4px">${escHtml(m.name)||'<span style="color:var(--text-tertiary);font-style:italic;font-weight:400">enter name</span>'}</span>
+      <span style="padding:8px 4px"><span class="badge" style="background:${roleBg};color:${roleColor}">${m.role}</span></span>
+      <span style="font-size:12px;padding:8px 4px;color:var(--text-secondary)">${salesStr}</span>
+      <span style="font-size:12px;padding:8px 4px;color:var(--text-secondary)">${teamStr}</span>
+      <span style="font-size:13px;padding:8px 4px;font-weight:500">${cwStr}</span>
+      <span style="font-size:12px;padding:8px 4px;color:var(--text-secondary)">${setupPct}</span>
     </div>`;
   }).join('');
 
-  const total = members.reduce((s, m) => s + m.split, 0);
+  // Total
+  const total = members.reduce((s, m) => s + (m.noComm ? 0 : m.cwPct), 0);
   const totalEl = document.getElementById('total-split-disp');
-  totalEl.textContent = total.toFixed(1) + '%';
+  if (totalEl) { totalEl.textContent = total.toFixed(2) + '%'; totalEl.style.color = 'var(--green-text)'; }
 
-  const diff = Math.abs(total - 100);
-  if (diff < 0.5) {
-    totalEl.style.color = 'var(--green-text)';
-    splitAlert.innerHTML = '';
-  } else if (total > 100) {
-    totalEl.style.color = 'var(--red-text)';
-    splitAlert.innerHTML = '<div class="alert alert-red">Total exceeds 100% — adjust splits before continuing.</div>';
-  } else {
-    totalEl.style.color = 'var(--amber-text)';
-    splitAlert.innerHTML = '<div class="alert alert-amber">Total is ' + total.toFixed(1) + '% — splits must sum to 100%.</div>';
+  const tpEl = document.getElementById('team-pct-disp');
+  if (tpEl) tpEl.textContent = numCSD > 0 ? (12/numCSD).toFixed(2) + '%' : '—';
+
+  // Explanation box
+  const expEl = document.getElementById('csd-explanation');
+  if (expEl && selectedTemplate && selectedTemplate.id !== 'van_krupal') {
+    const lines = members.filter(m => !m.noComm).map(m => {
+      let parts = [];
+      if (m.salesPct > 0) parts.push(`${m.salesPct.toFixed(2)}% (${m.role.toLowerCase()} role)`);
+      if (m.teamPct  > 0) parts.push(`${m.teamPct.toFixed(2)}% (CSD team share)`);
+      return `<strong>${escHtml(m.name)||'(unnamed)'}</strong> → ${parts.join(' + ')} = <strong>${m.cwPct.toFixed(2)}% CW entry</strong> × 8% = <strong>${(m.cwPct*0.08*100).toFixed(4)}% in Setup Tables</strong>`;
+    });
+    expEl.innerHTML = lines.join('<br>');
+  } else if (expEl) { expEl.innerHTML = ''; }
+
+  // Missing names alert
+  const missing = members.filter(m => !m.name.trim()).length;
+  if (splitAlert) {
+    splitAlert.innerHTML = missing > 0
+      ? `<div class="alert alert-amber">${missing} name${missing>1?'s':''} still needed.</div>`
+      : '';
   }
 }
 
-function onVanKrupal() {
-  renderMembers();
-  runRules();
-}
-
-function computeAll() {
-  renderMembers();
-}
+// ─── LEGACY STUBS ────────────────────────────────────────────────────────────
+function addMember() {}
+function removeMember(id) {}
+function updateMember(id, field, val) {}
+function renderMembers() { renderSummaryTable(); }
+function onVanKrupal() {}
+function computeAll() { renderSummaryTable(); }
 
 function runRules() {
-  const isVK = document.getElementById('van-krupal').checked;
+  const isVK = selectedTemplate && selectedTemplate.id === 'van_krupal';
   const region = document.getElementById('region').value;
   const tech = document.getElementById('tech-share').value;
   const type = document.getElementById('comm-type').value;
@@ -877,14 +1171,14 @@ function runRules() {
       note: 'When Van/Krupal sole sale is active, remove all other members'
     },
     {
-      label: 'Single-person 100% — recalculate required',
-      ok: isVK || !singleAt100,
-      note: 'One person at 100% (non-Van/Krupal) triggers mandatory recalculation'
+      label: 'Scenario selected',
+      ok: !!selectedTemplate,
+      note: 'A deal scenario must be selected in Tab 2 before proceeding'
     },
     {
-      label: 'Team splits sum to 100%',
-      ok: isVK || members.length === 0 || Math.abs(total - 100) < 0.5,
-      note: 'All member splits must add up to exactly 100%'
+      label: 'All team member names entered',
+      ok: !selectedScenario || members.every(m => m.name.trim() !== ''),
+      note: 'All team member name fields must be filled in Tab 2'
     },
     {
       label: 'CSD team commission ≤ 12% cap',
@@ -902,9 +1196,9 @@ function runRules() {
       note: 'Mixed region requires both NJ and FL CSD members to be present'
     },
     {
-      label: 'No unnamed team members',
-      ok: isVK || members.every(m => m.name.trim() !== ''),
-      note: 'All team members must have names entered'
+      label: 'CW entry percentages locked by policy',
+      ok: true,
+      note: 'Split percentages are auto-assigned from the policy table — no manual entry needed'
     },
   ];
 
@@ -934,7 +1228,7 @@ function runRules() {
 
 function generateOutput() {
   const type = document.getElementById('comm-type').value;
-  const isVK = document.getElementById('van-krupal').checked;
+  const isVK = selectedTemplate && selectedTemplate.id === 'van_krupal';
   const quote = document.getElementById('quote-num').value.trim() || '—';
   const oppId = document.getElementById('opp-id').value.trim() || '—';
   const caller = document.getElementById('caller').value.trim() || '—';
@@ -945,7 +1239,7 @@ function generateOutput() {
   const region = document.getElementById('region').value;
   const typeLabel = { recurring: 'Recurring', onetime: 'One-time', overage: 'Overage' }[type];
 
-  const headers = ['Quote #','Opp ID','Member','Role','Region','Split %','Comm %','Comm $','Start','End','Type'];
+  const headers = ['Quote #','Opp ID','Member','Role','Region','Sales %','Team %','CW Entry %','Setup Table %','Comm $','Start','End','Type'];
   document.getElementById('output-headers').innerHTML = headers.map(h => `<th>${h}</th>`).join('');
 
   let rows = [];
@@ -953,12 +1247,22 @@ function generateOutput() {
     rows = [{ name: 'Van/Krupal', role: 'Sole Sale', region, split: 100, commPct: 8, commDol: (dealVal * 0.08).toFixed(2) }];
   } else {
     rows = members.map(m => {
-      // No Comm role: included in split% for policy tracking but earns $0 commission
-      // (applies to Van, Krupal, Kevin M when part of a deal but not receiving payout)
-      const isNoComm = m.role === 'No Comm';
-      const commPct = isNoComm ? 0 : parseFloat((m.split * 0.08).toFixed(4));
-      const commDol = isNoComm ? '0.00' : (dealVal * m.split / 100 * 0.08).toFixed(2);
-      return { name: m.name || '(unnamed)', role: m.role, region, split: m.split, commPct, commDol, isNoComm };
+      const isNoComm = m.noComm || m.role === 'No Comm';
+      // Setup Table % = CW Entry % × 8%
+      const cwPct    = m.cwPct || m.split || 0;
+      const commPct  = isNoComm ? 0 : parseFloat((cwPct * 0.08).toFixed(6));
+      const commDol  = isNoComm ? '0.00' : (dealVal * cwPct / 100 * 0.08).toFixed(2);
+      return {
+        name: m.name || '(unnamed)',
+        role: m.role,
+        region,
+        split:    cwPct,
+        salesPct: m.salesPct || 0,
+        teamPct:  m.teamPct  || 0,
+        commPct,
+        commDol,
+        isNoComm
+      };
     });
   }
 
@@ -976,8 +1280,10 @@ function generateOutput() {
         <td><strong>${escHtml(r.name)}</strong>${r.isNoComm ? ' <span style="font-size:10px;color:var(--amber-text);font-weight:500">NO COMM</span>' : ''}</td>
         <td><span class="badge ${r.isNoComm ? 'badge-amber' : 'badge-blue'}">${r.role}</span></td>
         <td>${r.region}</td>
-        <td>${r.split}%</td>
-        <td>${r.isNoComm ? '—' : r.commPct + '%'}</td>
+        <td>${r.salesPct > 0 ? r.salesPct.toFixed(2)+'%' : '—'}</td>
+        <td>${r.teamPct > 0 ? r.teamPct.toFixed(2)+'%' : '—'}</td>
+        <td>${r.isNoComm ? '0%' : r.split.toFixed(2)+'%'}</td>
+        <td>${r.isNoComm ? '—' : r.commPct.toFixed(4)+'%'}</td>
         <td>${r.isNoComm ? '$0.00' : '$' + r.commDol}</td>
         <td>${startDate}</td>
         <td>${endDate}</td>
@@ -993,6 +1299,7 @@ function generateOutput() {
     dateNote = `<strong>One-time:</strong> No end date. Start = ${startDate}.`;
   }
 
+  const scenarioLabel = selectedScenario ? selectedScenario.label : '—';
   document.getElementById('date-summary').innerHTML = `
     <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">${dateNote}</p>
     <div class="info-row" style="margin-top:8px">
@@ -1000,6 +1307,7 @@ function generateOutput() {
       <span>Closer: <strong>${escHtml(closer)}</strong></span>
       <span>Region: <strong>${region}</strong></span>
       <span>Deal: <strong>$${dealVal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></span>
+      <span>Scenario: <strong>${scenarioLabel}</strong></span>
     </div>
   `;
 
@@ -1010,7 +1318,7 @@ function generateOutput() {
       '<div class="alert alert-amber" style="margin-bottom:12px">' + fails + ' rule' + (fails>1?'s':'')+' failed validation — review the Rules check tab before finalizing.</div>';
   }
 
-  window._tableData = { headers, rows: rows.map(r => [quote, oppId, r.name, r.role, region, r.split+'%', r.commPct+'%', '$'+r.commDol, startDate, endDate, typeLabel]) };
+  window._tableData = { headers, rows: rows.map(r => [quote, oppId, r.name, r.role, region, r.salesPct>0?r.salesPct.toFixed(2)+'%':'—', r.teamPct>0?r.teamPct.toFixed(2)+'%':'—', r.isNoComm?'0%':r.split.toFixed(2)+'%', r.isNoComm?'—':r.commPct.toFixed(4)+'%', '$'+r.commDol, startDate, endDate, typeLabel]) };
 }
 
 function copyTable() {
@@ -1050,12 +1358,10 @@ function escHtml(str) {
 (function init() {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('start-date').value = today;
-  addMember();
-  addMember();
-  members[0].role = 'Caller'; members[0].split = 92;
-  members[1].role = 'CSD';    members[1].split = 8;
   onTypeChange();
-  renderMembers();
+  renderScenarioGrid();
+  renderCSDCountBtns();
+  renderNameFields();
 })();
 </script>
 
